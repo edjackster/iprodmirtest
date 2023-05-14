@@ -7,59 +7,55 @@ from turtlesim.msg import Pose
 from turtlesim.srv import Spawn
 
 
+class PoliceTurtle:
+    def __init__(this, turtleThief, turtleCop, policeTurtleSpeed):
+        this.turtleThief = turtleThief
+        this.turtleCop = turtleCop
+        this.policeTurtleSpeed = policeTurtleSpeed
+        this.pose1 = Pose()
+        this.pose2 = Pose()
+        rospy.Subscriber("/" + this.turtleThief + "/pose", Pose, this.reverse_message1)
+        rospy.Subscriber("/" + this.turtleCop + "/pose", Pose, this.reverse_message2)
+        this.pub = rospy.Publisher("/" + this.turtleCop + "/cmd_vel", Twist, queue_size=10)  
 
-
-class TurtleFollower: #####
-    def __init__(self, turtleOne, turtleTwo, speed_of_stalker):
-        self.turtleOne = turtleOne
-        self.turtleTwo = turtleTwo
-        self.speed_of_stalker = speed_of_stalker
-        self.pose1 = Pose()
-        self.pose2 = Pose()
-        rospy.Subscriber("/" + self.turtleOne + "/pose", Pose, self.reverse_message1)
-        rospy.Subscriber("/" + self.turtleTwo + "/pose", Pose, self.reverse_message2)
-        self.pub = rospy.Publisher("/" + self.turtleTwo + "/cmd_vel", Twist, queue_size=10)  
-
-        # spawn a turtle
         spawner = rospy.ServiceProxy('spawn', Spawn)
-        spawner(random.uniform(0, 11), random.uniform(0, 11), 0, turtleTwo)
-        pose2_wf_message = rospy.wait_for_message("/" + self.turtleTwo + "/pose", Pose)
-        self.pose2.x = pose2_wf_message.x
-        self.pose2.y = pose2_wf_message.y
+        spawner(random.uniform(0, 11), random.uniform(0, 11), 0, turtleCop)
+        policePoseMessage = rospy.wait_for_message("/" + this.turtleCop + "/pose", Pose)
+        this.pose2.x = policePoseMessage.x
+        this.pose2.y = policePoseMessage.y
 
-    def reverse_message1(self, data):
-        self.pose1 = data
+    def reverse_message1(this, data):
+        this.pose1 = data
 
-    def reverse_message2(self,data):
-        self.pose2 = data
+    def reverse_message2(this,data):
+        this.pose2 = data
 
-    def follow(self):
+    def follow(this):
         while not rospy.is_shutdown():
-            x_pose1_pose2 = self.pose1.x - self.pose2.x
-            y_pose1_pose2 = self.pose1.y - self.pose2.y
+            xDistance = this.pose1.x - this.pose2.x
+            yDistance = this.pose1.y - this.pose2.y
 
-            # distance calculation 
-            range = ((x_pose1_pose2)**2 + (y_pose1_pose2)**2)**0.5
-            corner = math.atan2(y_pose1_pose2, x_pose1_pose2)
-            corner_pose1_pose2 = corner - self.pose2.theta
+            distance = max(((xDistance)**2 + (yDistance)**2)**0.5-1, 0)
+            corner = math.atan2(yDistance, xDistance)
+            cornerDelta = min(corner - this.pose2.theta, math.pi)
 
             cmd_vel = Twist()
-            cmd_vel.linear.x = self.speed_of_stalker * range
-            cmd_vel.angular.z = 4.0 * corner_pose1_pose2
+            cmd_vel.linear.x = min(this.policeTurtleSpeed * distance, this.policeTurtleSpeed)
+            cmd_vel.angular.z = 4.0 * cornerDelta
 
-            self.pub.publish(cmd_vel)
+            this.pub.publish(cmd_vel)
 
-            rospy.sleep(0.1)
+            rospy.sleep(0.2)
 
 
 if __name__ == '__main__':
-    rospy.init_node('turtle_follower_node')
+    rospy.init_node('police_turtle_node')
 
-    speed_of_stalker = rospy.get_param('~follower_speed')
+    policeTurtleSpeed = rospy.get_param('~police_speed')
 
-    turtleOne = rospy.get_param('~turtle1_name', 'turtle1')
-    turtleTwo = rospy.get_param('~turtle2_name', 'turtle2')
+    turtleThief = rospy.get_param('~turtle1_name', 'turtle1')
+    turtleCop = rospy.get_param('~turtle2_name', 'turtle2')
 
-    follower = TurtleFollower(turtleOne, turtleTwo, speed_of_stalker)
-    follower.follow()
+    policeTurtle = PoliceTurtle(turtleThief, turtleCop, policeTurtleSpeed)
+    policeTurtle.follow()
 

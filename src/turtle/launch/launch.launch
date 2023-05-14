@@ -2,6 +2,6 @@
   <node pkg="turtlesim" type="turtlesim_node" name="turtlesim_node" output="screen"/>
   <node pkg="turtlesim" type="turtle_teleop_key" name="turtle_teleop_key" output="screen"/>
   <node pkg="turtle" type="turtle_follow.py" name="turtle_follow_node" output="screen" required="true">
-    <param name="follower_speed" value="2"/>
+    <param name="police_speed" value="2"/>
   </node>
 </launch>
