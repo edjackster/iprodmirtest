@@ -1,0 +1,2 @@
+turtle
+-DCATKIN_DEVEL_PREFIX=/home/edjack/turtles_ws/devel -DCMAKE_INSTALL_PREFIX=/home/edjack/turtles_ws/install -G Unix Makefiles
